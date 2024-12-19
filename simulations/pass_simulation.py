@@ -1,13 +1,22 @@
-import random, os
+"""
+Module for simulating passing in a game.
+"""
+
+import os
+import random
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from tqdm import tqdm
 
-num_cores = os.cpu_count()
-num_workers = max(1, int(num_cores * 0.8))
+NUM_CORES = os.cpu_count()
+NUM_WORKERS = max(1, int(NUM_CORES * 0.8))
 
-def pass_ball(n_passes):
+
+def pass_ball(num_passes):
+    """
+    Simulates passing the ball between players A, B, and C.
+    """
     current_player = 'A'
-    for _ in range(n_passes):
+    for _ in range(num_passes):
         if current_player == 'A':
             current_player = random.choice(['B', 'C'])
         elif current_player == 'B':
@@ -16,26 +25,31 @@ def pass_ball(n_passes):
             current_player = random.choice(['A', 'B'])
     return current_player
 
-def run_batch(n_passes, n_simulations):
+
+def run_batch(num_passes, num_simulations):
+    """
+    Runs a batch of simulations.
+    """
     results = []
-    num_workers = 8  # Assuming you are using 8 cores
-    simulations_per_worker = n_simulations // num_workers  # Ensure each worker runs a portion of the total simulations
-    for i in range(simulations_per_worker):
+    simulations_per_worker = num_simulations // NUM_WORKERS  # Ensure each worker runs a portion of the total simulations
+    for _ in range(simulations_per_worker):
         try:
-            result = pass_ball(n_passes)
+            result = pass_ball(num_passes)
             results.append(result)
-        except Exception as e:
-            print(f"Error in pass_ball with n_passes={n_passes}: {e}")
+        except Exception as e:  # Catch specific exception
+            print(f"Error in pass_ball with num_passes={num_passes}: {e}")
     return results
 
-def calculate_probability(n_passes, total_simulations, batch_size):
 
-    
+def calculate_probability(num_passes, total_simulations, batch_size):
+    """
+    Calculates the probabilities of returning to player A, B, or C after a number of passes.
+    """
     total_results = []
     with tqdm(total=total_simulations, desc="Processing simulations") as pbar:
         for i in range(0, total_simulations, batch_size):
-            with ProcessPoolExecutor(max_workers=num_workers) as executor:
-                futures = [executor.submit(run_batch, n_passes, min(batch_size, total_simulations - i)) for _ in range(num_workers)]
+            with ProcessPoolExecutor(max_workers=NUM_WORKERS) as executor:
+                futures = [executor.submit(run_batch, num_passes, min(batch_size, total_simulations - i)) for _ in range(NUM_WORKERS)]
                 for future in as_completed(futures):
                     batch_results = future.result()
                     total_results.extend(batch_results)
@@ -46,22 +60,20 @@ def calculate_probability(n_passes, total_simulations, batch_size):
         print(f"Warning: Total results count ({len(total_results)}) does not match total_simulations ({total_simulations})")
     
     # Debugging: check if counts add up
-    count_A = total_results.count('A')
-    count_B = total_results.count('B')
-    count_C = total_results.count('C')
+    count_a = total_results.count('A')
+    count_b = total_results.count('B')
+    count_c = total_results.count('C')
     
-    if count_A + count_B + count_C != total_simulations:
-        print("Warning: Counts do not add up to total_simulations", count_A + count_B + count_C)
+    if count_a + count_b + count_c != total_simulations:
+        print("Warning: Counts do not add up to total_simulations", count_a + count_b + count_c)
     
-    total_simulations = total_simulations  # Set total_simulations from input parameter
-
-    prob_A = count_A / total_simulations
-    prob_B = count_B / total_simulations
-    prob_C = count_C / total_simulations
+    prob_a = count_a / total_simulations
+    prob_b = count_b / total_simulations
+    prob_c = count_c / total_simulations
     
-    print("Final Probability of returning to A after %d passes: %.4f" % (n_passes, prob_A))
-    print("Final Probability of returning to B after %0d passes: %.4f" % (n_passes, prob_B))
-    print("Final Probability of returning to C after %0d passes: %.4f" % (n_passes, prob_C))
+    print(f"Final Probability of returning to A after {num_passes} passes: {prob_a:.4f}")
+    print(f"Final Probability of returning to B after {num_passes} passes: {prob_b:.4f}")
+    print(f"Final Probability of returning to C after {num_passes} passes: {prob_c:.4f}")
 
 if __name__ == '__main__':
     N_PASSES = 10
