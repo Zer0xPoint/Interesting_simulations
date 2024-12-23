@@ -4,6 +4,10 @@ import math
 from multiprocessing import Pool
 from tqdm import tqdm
 
+# flipping 9 cards, filp 1-3 cards at a time 
+# return the average number of flips to make all cards face up
+# simulate 100000 times
+
 def simulate(_):
     cards = [0] * 9  # 9张反面牌
     count = 0  # 操作次数
